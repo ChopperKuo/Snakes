@@ -13,7 +13,6 @@ class SNAKES_API ASnakesGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
 	
-	
-	
-	
+public:
+	virtual void PostLogin(APlayerController* NewPlayer) override;
 };

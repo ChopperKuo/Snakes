@@ -27,6 +27,7 @@ ASnakePawn::ASnakePawn()
 	CameraSpringArmComponent->SetupAttachment(VisibleMeshComponent);
 	CameraSpringArmComponent->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 50.0f), FRotator(-80.0f, 0.0f, 0.0f));
 	CameraSpringArmComponent->TargetArmLength = 800.0f;
+	CameraSpringArmComponent->bDoCollisionTest = false;
 	CameraSpringArmComponent->bEnableCameraLag = true;
 	CameraSpringArmComponent->CameraLagSpeed = 3.0f;
 
@@ -68,17 +69,9 @@ UPawnMovementComponent* ASnakePawn::GetMovementComponent() const
 void ASnakePawn::MoveForward(float AxisValue)
 {
 	AddMovementInput(GetActorForwardVector(), AxisValue);
-	//if (SnakePawnMovementComponent != nullptr && SnakePawnMovementComponent->UpdatedComponent == RootComponent)
-	//{
-	//	SnakePawnMovementComponent->AddInputVector(GetActorForwardVector() * AxisValue);
-	//}
 }
 
 void ASnakePawn::MoveRight(float AxisValue)
 {
 	AddMovementInput(GetActorRightVector(), AxisValue);
-	//if (SnakePawnMovementComponent != nullptr && SnakePawnMovementComponent->UpdatedComponent == RootComponent)
-	//{
-	//	SnakePawnMovementComponent->AddInputVector(GetActorRightVector() * AxisValue);
-	//}
 }

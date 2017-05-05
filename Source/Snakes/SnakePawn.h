@@ -28,20 +28,19 @@ public:
 	virtual UPawnMovementComponent* GetMovementComponent() const override;
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
 	UBoxComponent* CollisionComponent;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* VisibleMeshComponent;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
 	USpringArmComponent* CameraSpringArmComponent;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
 	UCameraComponent* CameraComponent;
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
 	class USnakePawnMovementComponent* SnakePawnMovementComponent;
 
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
-
 };
