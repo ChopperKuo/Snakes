@@ -17,9 +17,9 @@ public:
 	USnakePawnMovementComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 public:
-	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
-
 	virtual void InitializeComponent() override;
+
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
 
 protected:
 	UPROPERTY(Category = Snake, EditAnywhere, BlueprintReadWrite)
@@ -30,10 +30,10 @@ protected:
 
 	void ReplicateMoveToServer(float DeltaTime, FVector InputVector);
 
-	void PerformMovement(float DeltaTime);
+	void PerformMovement(float DeltaTime, FVector InputVector);
 
 	UFUNCTION(Category = Snake, Server, Unreliable, WithValidation)
-	void ReplicateInputVector(FVector_NetQuantize100 InputVector);
-	void ReplicateInputVector_Implementation(FVector_NetQuantize100 InputVector);
-	bool ReplicateInputVector_Validate(FVector_NetQuantize100 InputVector);
+	void ReplicateInputVector(float DeltaTime, FVector_NetQuantize100 InputVector);
+	void ReplicateInputVector_Implementation(float DeltaTime, FVector_NetQuantize100 InputVector);
+	bool ReplicateInputVector_Validate(float DeltaTime, FVector_NetQuantize100 InputVector);
 };

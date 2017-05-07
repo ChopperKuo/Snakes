@@ -7,11 +7,9 @@
 // Sets default values
 ASnakePawn::ASnakePawn()
 {
- 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
-
 	CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionComponent"));
 	CollisionComponent->InitBoxExtent(FVector(50.0f));
+
 	RootComponent = CollisionComponent;
 
 	VisibleMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisibleMeshComponent"));
@@ -35,7 +33,7 @@ ASnakePawn::ASnakePawn()
 	CameraComponent->SetupAttachment(CameraSpringArmComponent, USpringArmComponent::SocketName);
 
 	SnakePawnMovementComponent = CreateDefaultSubobject<USnakePawnMovementComponent>(TEXT("SnakePawnMovementComponent"));
-	SnakePawnMovementComponent->SetUpdatedComponent(RootComponent);
+	SnakePawnMovementComponent->UpdatedComponent = RootComponent;
 }
 
 // Called when the game starts or when spawned
@@ -43,6 +41,12 @@ void ASnakePawn::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (GEngine)
+	{
+		const UEnum* EnumNetRole = FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true);
+		FString Message = FString::Printf(TEXT("%s %s"), *GetName(), *EnumNetRole->GetEnumName((int32)Role));
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Yellow, Message);
+	}
 }
 
 // Called every frame
