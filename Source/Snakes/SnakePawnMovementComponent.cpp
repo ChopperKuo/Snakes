@@ -15,10 +15,23 @@ USnakePawnMovementComponent::USnakePawnMovementComponent(const FObjectInitialize
 
 void USnakePawnMovementComponent::InitializeComponent()
 {
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Orange, FString(TEXT("InitializeComponent(Begin)")), false);
+	}
+
 	Super::InitializeComponent();
 
 	// Treat Velocity as a direction.
 	Velocity = Velocity.GetSafeNormal() * NormalSpeed;
+
+	if (GEngine)
+	{
+		const UEnum* EnumNetRole = FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true);
+		FString Message = FString::Printf(TEXT("InitializeComponent(End) %s %s Velocity=%s"),
+			*GetOwner()->GetName(), *EnumNetRole->GetEnumName((int32)GetOwner()->Role), *Velocity.ToString());
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Orange, Message, false);
+	}
 }
 
 void USnakePawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
@@ -26,6 +39,16 @@ void USnakePawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick
 	if (!HasValidData() || ShouldSkipUpdate(DeltaTime))
 	{
 		return;
+	}
+
+	if (GEngine && CurrentTickMessage < TickMessageCount)
+	{
+		CurrentTickMessage++;
+
+		const UEnum* EnumNetRole = FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true);
+		FString Message = FString::Printf(TEXT("TickComponent %s %s Velocity=%s"),
+			*GetOwner()->GetName(), *EnumNetRole->GetEnumName((int32)GetOwner()->Role), *Velocity.ToString());
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Orange, Message, false);
 	}
 
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -47,6 +70,24 @@ void USnakePawnMovementComponent::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(USnakePawnMovementComponent, Location);
+}
+
+void USnakePawnMovementComponent::BeginPlay()
+{
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Orange, FString(TEXT("BeginPlay(Begin)")), false);
+	}
+
+	Super::BeginPlay();
+
+	if (GEngine)
+	{
+		const UEnum* EnumNetRole = FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true);
+		FString Message = FString::Printf(TEXT("BeginPlay(End) %s %s Velocity=%s"),
+			*GetOwner()->GetName(), *EnumNetRole->GetEnumName((int32)GetOwner()->Role), *Velocity.ToString());
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Orange, Message, false);
+	}
 }
 
 void USnakePawnMovementComponent::OnRep_Location()
@@ -97,4 +138,12 @@ bool USnakePawnMovementComponent::ReplicateInputVector_Validate(float DeltaTime,
 void USnakePawnMovementComponent::SetMovementDirection(const FVector& NewDirection)
 {
 	Velocity = NewDirection.GetSafeNormal() * NormalSpeed;
+
+	if (GEngine)
+	{
+		const UEnum* EnumNetRole = FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true);
+		FString Message = FString::Printf(TEXT("SetMovementDirection %s %s Velocity=%s"),
+			*GetOwner()->GetName(), *EnumNetRole->GetEnumName((int32)GetOwner()->Role), *Velocity.ToString());
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Orange, Message, false);
+	}
 }

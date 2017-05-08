@@ -23,6 +23,8 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	virtual void BeginPlay() override;
+
 protected:
 	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_Location)
 	FVector Location;
@@ -31,6 +33,9 @@ protected:
 
 	UFUNCTION()
 	void OnRep_Location();
+
+	int32 TickMessageCount = 10;
+	int32 CurrentTickMessage = 0;
 
 protected:
 	bool HasValidData() const;

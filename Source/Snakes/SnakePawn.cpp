@@ -57,18 +57,28 @@ ASnakePawn::ASnakePawn() :
 // Called when the game starts or when spawned
 void ASnakePawn::BeginPlay()
 {
-	Super::BeginPlay();
-
 	if (GEngine)
 	{
-		const UEnum* EnumNetRole = FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true);
-		FString Message = FString::Printf(TEXT("%s %s BeginPlay"), *GetName(), *EnumNetRole->GetEnumName((int32)Role));
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Yellow, Message);
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Yellow, FString(TEXT("BeginPlay(Begin)")), false);
 	}
+
+	Super::BeginPlay();
 
 	if (HasAuthority())
 	{
 		RebornOnRandomLocationAndRotation();
+	}
+
+	if (GEngine)
+	{
+		const UEnum* EnumNetRole = FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true);
+		FString Message = FString::Printf(TEXT("BeginPlay(End) %s %s"),
+			*GetName(), *EnumNetRole->GetEnumName((int32)Role));
+		if (SnakePawnMovementComponent)
+		{
+			Message += FString::Printf(TEXT(" Velocity=%s"), *SnakePawnMovementComponent->Velocity.ToString());
+		}
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Yellow, Message, false);
 	}
 }
 
@@ -98,7 +108,7 @@ void ASnakePawn::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 	{
 		const UEnum* EnumNetRole = FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true);
 		FString Message = FString::Printf(TEXT("%s %s OnBeginOverlap OtherActor=%s"), *GetName(), *EnumNetRole->GetEnumName((int32)Role), *OtherActor->GetName());
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Yellow, Message);
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Yellow, Message, false);
 	}
 
 	if (HasAuthority())
