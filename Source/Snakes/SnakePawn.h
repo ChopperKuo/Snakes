@@ -5,6 +5,8 @@
 #include "GameFramework/Pawn.h"
 #include "SnakePawn.generated.h"
 
+class USnakePawnMovementComponent;
+
 UCLASS()
 class SNAKES_API ASnakePawn : public APawn
 {
@@ -30,8 +32,15 @@ public:
 protected:
 	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
 	UBoxComponent* CollisionComponent;
+
+	UFUNCTION()
+	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+protected:
 	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* VisibleMeshComponent;
+
+protected:
 	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
 	USpringArmComponent* CameraSpringArmComponent;
 	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
@@ -39,8 +48,15 @@ protected:
 
 protected:
 	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
+	UParticleSystemComponent* ParticleSystemComponent;
+
+protected:
+	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
 	class USnakePawnMovementComponent* SnakePawnMovementComponent;
 
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
+
+protected:
+	void RebornOnRandomLocationAndRotation();
 };

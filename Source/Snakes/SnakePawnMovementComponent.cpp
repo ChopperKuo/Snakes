@@ -2,12 +2,15 @@
 
 #include "Snakes.h"
 #include "SnakePawnMovementComponent.h"
+#include "Net/UnrealNetwork.h"
 
-USnakePawnMovementComponent::USnakePawnMovementComponent(const FObjectInitializer& ObjectInitializer)
+USnakePawnMovementComponent::USnakePawnMovementComponent(const FObjectInitializer& ObjectInitializer) :
+	Super(ObjectInitializer)
 {
 	// Move 2.5 units per second.
-	NormalSpeed = 100.0f;
+	NormalSpeed = 250.0f;
 	Velocity = FVector::ForwardVector;
+	bReplicates = true;
 }
 
 void USnakePawnMovementComponent::InitializeComponent()
@@ -27,22 +30,28 @@ void USnakePawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick
 
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (PawnOwner->Role > ROLE_SimulatedProxy)
+	if (PawnOwner->Role == ROLE_Authority)
 	{
-		if (PawnOwner->Role == ROLE_Authority)
-		{
-			//PerformMovement(DeltaTime);
-		}
-		else if (PawnOwner->Role == ROLE_AutonomousProxy)
-		{
-			//if (GetPendingInputVector() != GetLastInputVector())
-			{
-				ReplicateMoveToServer(DeltaTime, ConsumeInputVector());
-			}
-		}
+		PerformMovement(DeltaTime);
+	}
+	else if (PawnOwner->Role == ROLE_AutonomousProxy)
+	{
+		//ReplicateMoveToServer(DeltaTime, ConsumeInputVector());
 	}
 
 	UpdateComponentVelocity();
+}
+
+void USnakePawnMovementComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(USnakePawnMovementComponent, Location);
+}
+
+void USnakePawnMovementComponent::OnRep_Location()
+{
+	UpdatedComponent->SetWorldLocation(Location, true);
 }
 
 bool USnakePawnMovementComponent::HasValidData() const
@@ -53,35 +62,21 @@ bool USnakePawnMovementComponent::HasValidData() const
 
 void USnakePawnMovementComponent::ReplicateMoveToServer(float DeltaTime, FVector InputVector)
 {
-	PerformMovement(DeltaTime, InputVector);
+	PerformMovement(DeltaTime);
 	ReplicateInputVector(DeltaTime, InputVector);
 }
 
-void USnakePawnMovementComponent::PerformMovement(float DeltaTime, FVector InputVector)
+void USnakePawnMovementComponent::PerformMovement(float DeltaTime)
 {
 	if (!HasValidData())
 	{
 		return;
 	}
 
-	if (!InputVector.IsZero())
-	{
-		float DotValue = FVector::DotProduct(Velocity, InputVector);
-		if (DotValue >= 0)
-		{
-			Velocity = InputVector.GetSafeNormal() * NormalSpeed;
-		}
-	}
-
 	FVector MovementDelta = Velocity * DeltaTime;
-	MoveUpdatedComponent(MovementDelta, UpdatedComponent->GetComponentRotation(), false);
+	UpdatedComponent->MoveComponent(MovementDelta, UpdatedComponent->GetComponentQuat(), true);
 
-	//if (GEngine)
-	//{
-	//	const UEnum* EnumNetRole = FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true);
-	//	FString Message = FString::Printf(TEXT("%s %s PerformMovement InputVector=%s ActorLocation=%s"), *PawnOwner->GetName(), *EnumNetRole->GetEnumName((int)PawnOwner->Role), *InputVector.ToString(), *GetActorLocation().ToString());
-	//	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Yellow, Message);
-	//}
+	Location = GetActorLocation();
 }
 
 void USnakePawnMovementComponent::ReplicateInputVector_Implementation(float DeltaTime, FVector_NetQuantize100 InputVector)
@@ -91,10 +86,15 @@ void USnakePawnMovementComponent::ReplicateInputVector_Implementation(float Delt
 		return;
 	}
 
-	PerformMovement(DeltaTime, InputVector);
+	PerformMovement(DeltaTime);
 }
 
 bool USnakePawnMovementComponent::ReplicateInputVector_Validate(float DeltaTime, FVector_NetQuantize100 InputVector)
 {
 	return true;
+}
+
+void USnakePawnMovementComponent::SetMovementDirection(const FVector& NewDirection)
+{
+	Velocity = NewDirection.GetSafeNormal() * NormalSpeed;
 }

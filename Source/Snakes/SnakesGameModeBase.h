@@ -14,5 +14,10 @@ class SNAKES_API ASnakesGameModeBase : public AGameModeBase
 	GENERATED_BODY()
 	
 public:
-	virtual void PostLogin(APlayerController* NewPlayer) override;
+	UFUNCTION(Category = Gameplay, BlueprintCallable)
+	FORCEINLINE FBox GetWorldBox() const;
+
+protected:
+	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadWrite)
+	FBox WorldBox;
 };
