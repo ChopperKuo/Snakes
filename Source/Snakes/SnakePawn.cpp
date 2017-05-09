@@ -3,11 +3,12 @@
 #include "Snakes.h"
 #include "SnakePawn.h"
 #include "SnakePawnMovementComponent.h"
+#include "SnakeBody.h"
 #include "SnakesGameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Templates/Casts.h"
 
-ASnakePawn::ASnakePawn() : Super()
+ASnakePawn::ASnakePawn()
 {
 	// 關閉自動位置同步，SnakePawnMovementComponent負責Client的移動。
 	bReplicateMovement = false;
@@ -68,6 +69,10 @@ UPawnMovementComponent* ASnakePawn::GetMovementComponent() const
 void ASnakePawn::BeginPlay()
 {
 	Super::BeginPlay();
+
+	ASnakeBody* SnakeBody = GetWorld()->SpawnActor<ASnakeBody>(GetActorLocation(), GetActorRotation());
+	SnakeBody->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+	SnakeBody->SetFollowTarget(this);
 
 	if (HasAuthority())
 	{

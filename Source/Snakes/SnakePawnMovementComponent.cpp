@@ -8,26 +8,7 @@ USnakePawnMovementComponent::USnakePawnMovementComponent(const FObjectInitialize
 	Super(ObjectInitializer)
 {
 	Speed = 400.0f;
-	Velocity = FVector::ForwardVector;
 	bReplicates = true;
-}
-
-void USnakePawnMovementComponent::InitializeComponent()
-{
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Orange, FString(TEXT("InitializeComponent(Begin)")), false);
-	}
-
-	Super::InitializeComponent();
-
-	if (GEngine)
-	{
-		const UEnum* EnumNetRole = FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true);
-		FString Message = FString::Printf(TEXT("InitializeComponent(End) %s %s Velocity=%s"),
-			*GetOwner()->GetName(), *EnumNetRole->GetEnumName((int32)GetOwner()->Role), *Velocity.ToString());
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Orange, Message, false);
-	}
 }
 
 void USnakePawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
@@ -62,35 +43,10 @@ void USnakePawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick
 void USnakePawnMovementComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	
+
+	DOREPLIFETIME(USnakePawnMovementComponent, Speed);
 	DOREPLIFETIME(USnakePawnMovementComponent, Location);
 	DOREPLIFETIME(USnakePawnMovementComponent, Rotation);
-	DOREPLIFETIME(USnakePawnMovementComponent, TurnFactor);
-	DOREPLIFETIME(USnakePawnMovementComponent, RushFactor);
-	DOREPLIFETIME(USnakePawnMovementComponent, Speed);
-}
-
-void USnakePawnMovementComponent::BeginPlay()
-{
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Orange, FString(TEXT("BeginPlay(Begin)")), false);
-	}
-
-	Super::BeginPlay();
-
-	if (GEngine)
-	{
-		const UEnum* EnumNetRole = FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true);
-		FString Message = FString::Printf(TEXT("BeginPlay(End) %s %s Velocity=%s"),
-			*GetOwner()->GetName(), *EnumNetRole->GetEnumName((int32)GetOwner()->Role), *Velocity.ToString());
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Orange, Message, false);
-	}
-}
-
-void USnakePawnMovementComponent::OnRep_Location()
-{
-	//UpdatedComponent->SetWorldLocation(Location);
 }
 
 bool USnakePawnMovementComponent::HasValidData() const

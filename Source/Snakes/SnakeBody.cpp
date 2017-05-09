@@ -3,7 +3,7 @@
 #include "Snakes.h"
 #include "SnakeBody.h"
 
-ASnakeBody::ASnakeBody() : Super()
+ASnakeBody::ASnakeBody()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -52,27 +52,51 @@ FORCEINLINE AActor* ASnakeBody::GetFollowTarget() const
 
 void ASnakeBody::CaptureTargetMove(float DeltaTime)
 {
-	// 取得目標的位置和旋轉量。
-	FSnakeMove NewMove;
-	NewMove.Location = FollowTarget->GetActorLocation();
-	NewMove.Rotation = FollowTarget->GetActorRotation();
-
-	if (FollowPath.Num() == 0)
+	if (!FollowTarget)
 	{
-		FollowPath.Add(NewMove);
 		return;
 	}
 
-	FSnakeMove LastMove = FollowPath.Last();
-	if (NewMove.Rotation.Equals(LastMove.Rotation))
+	// 取得目標的位置和旋轉量。
+	FSnakeMove NewMove = CreateMove();
+	NewMove.DeltaTime = DeltaTime;
+
+	// 嘗試把新的移動合併到最後一筆紀錄；否則新增新的移動。
+	if (FollowPath.Num() != 0)
 	{
+		FSnakeMove LastMove = FollowPath.Last();
+		if (TryCombineTwoMoves(LastMove, NewMove, NewMove))
+		{
+			FollowPath.Last() = NewMove;
+			return;
+		}
 	}
+
+	FollowPath.Add(NewMove);
 }
 
-bool ASnakeBody::TryCombineTwoMoves(const FSnakeMove& FirstMove, const FSnakeMove& SecondMove, FSnakeMove& NewMove)
+FSnakeMove ASnakeBody::CreateMove()
 {
-	if (FirstMove.Rotation.Equals(SecondMove.Rotation))
+	FSnakeMove NewMove;
+	if (FollowTarget)
 	{
+		NewMove.Location = FollowTarget->GetActorLocation();
+		NewMove.Rotation = FollowTarget->GetActorRotation();
+	}
+	return NewMove;
+}
+
+bool ASnakeBody::TryCombineTwoMoves(const FSnakeMove& BaseMove, const FSnakeMove& IncomingMove, FSnakeMove& NewMove)
+{
+	if (BaseMove.Rotation.Equals(IncomingMove.Rotation))
+	{
+		float closestDistance = FMath::PointDistToLine(IncomingMove.Location, BaseMove.Rotation.Vector(), BaseMove.Location);
+		if (closestDistance == 0.0f)
+		{
+			NewMove = BaseMove;
+			NewMove.DeltaTime += IncomingMove.DeltaTime;
+			return true;
+		}
 	}
 	return false;
 }

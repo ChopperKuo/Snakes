@@ -41,7 +41,9 @@ public:
 
 private:
 	void CaptureTargetMove(float DeltaTime);
-	static bool TryCombineTwoMoves(const FSnakeMove& FirstMove, const FSnakeMove& SecondMove, FSnakeMove& NewMove);
+	FSnakeMove CreateMove();
+	bool TryCombineTwoMoves(const FSnakeMove& BaseMove, const FSnakeMove& IncomingMove, FSnakeMove& NewMove);
+
 
 private:
 	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))

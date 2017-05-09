@@ -17,28 +17,19 @@ public:
 	USnakePawnMovementComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 public:
-	virtual void InitializeComponent() override;
-
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	virtual void BeginPlay() override;
-
 protected:
-	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, Transient, ReplicatedUsing = OnRep_Location)
-	FVector Location;
-	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, Transient, ReplicatedUsing = OnRep_Location)
-	FRotator Rotation;
-	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, Transient, Replicated)
-	float TurnFactor;
-	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, Transient, Replicated)
-	float RushFactor;
-	UPROPERTY(Category = Gameplay, EditAnywhere, BlueprintReadWrite, Transient, Replicated)
+	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadWrite, Transient, Replicated)
 	float Speed;
-
-	UFUNCTION()
-	void OnRep_Location();
+	UPROPERTY(Transient, Replicated)
+	FVector Location;
+	UPROPERTY(Transient, Replicated)
+	FRotator Rotation;
+	float TurnFactor;
+	float RushFactor;
 
 protected:
 	bool HasValidData() const;
