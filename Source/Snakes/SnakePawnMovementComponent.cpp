@@ -7,8 +7,7 @@
 USnakePawnMovementComponent::USnakePawnMovementComponent(const FObjectInitializer& ObjectInitializer) :
 	Super(ObjectInitializer)
 {
-	// Move 2.5 units per second.
-	NormalSpeed = 250.0f;
+	Speed = 400.0f;
 	Velocity = FVector::ForwardVector;
 	bReplicates = true;
 }
@@ -22,9 +21,6 @@ void USnakePawnMovementComponent::InitializeComponent()
 
 	Super::InitializeComponent();
 
-	// Treat Velocity as a direction.
-	Velocity = Velocity.GetSafeNormal() * NormalSpeed;
-
 	if (GEngine)
 	{
 		const UEnum* EnumNetRole = FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true);
@@ -36,30 +32,28 @@ void USnakePawnMovementComponent::InitializeComponent()
 
 void USnakePawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
 {
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
 	if (!HasValidData() || ShouldSkipUpdate(DeltaTime))
 	{
 		return;
 	}
 
-	if (GEngine && CurrentTickMessage < TickMessageCount)
-	{
-		CurrentTickMessage++;
-
-		const UEnum* EnumNetRole = FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true);
-		FString Message = FString::Printf(TEXT("TickComponent %s %s Velocity=%s"),
-			*GetOwner()->GetName(), *EnumNetRole->GetEnumName((int32)GetOwner()->Role), *Velocity.ToString());
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Orange, Message, false);
-	}
-
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
 	if (PawnOwner->Role == ROLE_Authority)
 	{
-		PerformMovement(DeltaTime);
+		ServerMove(DeltaTime);
 	}
-	else if (PawnOwner->Role == ROLE_AutonomousProxy)
+	else if (PawnOwner->Role <= ROLE_AutonomousProxy)
 	{
-		//ReplicateMoveToServer(DeltaTime, ConsumeInputVector());
+		ClientMove(DeltaTime);
+
+		if (PawnOwner->Role == ROLE_AutonomousProxy)
+		{
+			//if (GetPendingInputVector() != GetLastInputVector())
+			{
+				ReplicateInputVector(ConsumeInputVector());
+			}
+		}
 	}
 
 	UpdateComponentVelocity();
@@ -70,6 +64,10 @@ void USnakePawnMovementComponent::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(USnakePawnMovementComponent, Location);
+	DOREPLIFETIME(USnakePawnMovementComponent, Rotation);
+	DOREPLIFETIME(USnakePawnMovementComponent, TurnFactor);
+	DOREPLIFETIME(USnakePawnMovementComponent, RushFactor);
+	DOREPLIFETIME(USnakePawnMovementComponent, Speed);
 }
 
 void USnakePawnMovementComponent::BeginPlay()
@@ -92,7 +90,7 @@ void USnakePawnMovementComponent::BeginPlay()
 
 void USnakePawnMovementComponent::OnRep_Location()
 {
-	UpdatedComponent->SetWorldLocation(Location, true);
+	//UpdatedComponent->SetWorldLocation(Location);
 }
 
 bool USnakePawnMovementComponent::HasValidData() const
@@ -101,49 +99,83 @@ bool USnakePawnMovementComponent::HasValidData() const
 	return bIsValid;
 }
 
-void USnakePawnMovementComponent::ReplicateMoveToServer(float DeltaTime, FVector InputVector)
-{
-	PerformMovement(DeltaTime);
-	ReplicateInputVector(DeltaTime, InputVector);
-}
-
-void USnakePawnMovementComponent::PerformMovement(float DeltaTime)
+void USnakePawnMovementComponent::ServerMove(float DeltaTime)
 {
 	if (!HasValidData())
 	{
 		return;
 	}
 
-	FVector MovementDelta = Velocity * DeltaTime;
-	UpdatedComponent->MoveComponent(MovementDelta, UpdatedComponent->GetComponentQuat(), true);
+	float Factor = RushFactor + 1.0f;
 
-	Location = GetActorLocation();
+	Rotation = UpdatedComponent->GetComponentRotation();
+	Rotation.Yaw += TurnFactor * Factor;
+	UpdatedComponent->MoveComponent(FVector::ZeroVector, Rotation, true);
+
+	Velocity = UpdatedComponent->GetForwardVector() * Speed * Factor;
+	FVector DeltaMovement = Velocity * DeltaTime;
+	UpdatedComponent->MoveComponent(DeltaMovement, UpdatedComponent->GetComponentQuat(), true);
+
+	Location = UpdatedComponent->GetComponentLocation();
 }
 
-void USnakePawnMovementComponent::ReplicateInputVector_Implementation(float DeltaTime, FVector_NetQuantize100 InputVector)
+void USnakePawnMovementComponent::ClientMove(float DeltaTime)
 {
-	if (!HasValidData() || !IsActive())
+	if (!HasValidData())
 	{
 		return;
 	}
 
-	PerformMovement(DeltaTime);
+	FVector CurrentLocation = UpdatedComponent->GetComponentLocation();
+	if (CurrentLocation == Location)
+	{
+		return;
+	}
+
+	FVector NewLocation = Location;
+	if (Speed > 0.0f)
+	{
+		FVector DeltaMovement = NewLocation - CurrentLocation;
+		float Factor = FMath::Clamp(DeltaMovement.Size() / (Speed * DeltaTime), 0.0f, 1.0f);
+		NewLocation = FMath::Lerp(CurrentLocation, NewLocation, Factor);
+	}
+
+	UpdatedComponent->SetWorldLocationAndRotation(NewLocation, Rotation);
 }
 
-bool USnakePawnMovementComponent::ReplicateInputVector_Validate(float DeltaTime, FVector_NetQuantize100 InputVector)
+void USnakePawnMovementComponent::ReplicateInputVector_Implementation(FVector_NetQuantize100 InputVector)
+{
+	TurnFactor = InputVector.Y;
+	RushFactor = FMath::Clamp(InputVector.X, 0.0f, 1.0f);
+}
+
+bool USnakePawnMovementComponent::ReplicateInputVector_Validate(FVector_NetQuantize100 InputVector)
 {
 	return true;
 }
 
-void USnakePawnMovementComponent::SetMovementDirection(const FVector& NewDirection)
+void USnakePawnMovementComponent::SetDirection(const FVector& NewDirection, bool bConstrainToOriginalDirectioin)
 {
-	Velocity = NewDirection.GetSafeNormal() * NormalSpeed;
+	//if (NewDirection.IsNearlyZero())
+	//{
+	//	return;
+	//}
+	//
+	//if (bConstrainToOriginalDirectioin)
+	//{
+	//	float ScaleProjection = NewDirection | Direction;
+	//	if (ScaleProjection >= 0.0f)
+	//	{
+	//		Direction = NewDirection.GetSafeNormal();
+	//	}
+	//}
+	//else
+	//{
+	//	Direction = NewDirection.GetSafeNormal();
+	//}
+}
 
-	if (GEngine)
-	{
-		const UEnum* EnumNetRole = FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true);
-		FString Message = FString::Printf(TEXT("SetMovementDirection %s %s Velocity=%s"),
-			*GetOwner()->GetName(), *EnumNetRole->GetEnumName((int32)GetOwner()->Role), *Velocity.ToString());
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Orange, Message, false);
-	}
+FORCEINLINE FVector USnakePawnMovementComponent::GetDirection() const
+{
+	return FVector::ForwardVector;
 }

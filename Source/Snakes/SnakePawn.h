@@ -5,58 +5,46 @@
 #include "GameFramework/Pawn.h"
 #include "SnakePawn.generated.h"
 
-class USnakePawnMovementComponent;
-
 UCLASS()
 class SNAKES_API ASnakePawn : public APawn
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this pawn's properties
 	ASnakePawn();
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+private:
+	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UBoxComponent* CollisionComponent;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UStaticMeshComponent* HeadMesh;
 
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	USpringArmComponent* CameraSpringArmComponent;
+	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UCameraComponent* CameraComponent;
 
+	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UParticleSystemComponent* ParticleSystemComponent;
+
+	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class USnakePawnMovementComponent* SnakePawnMovementComponent;
+
+public:
 	virtual UPawnMovementComponent* GetMovementComponent() const override;
 
 protected:
-	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
-	UBoxComponent* CollisionComponent;
+	virtual void BeginPlay() override;
+
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+private:
+	void MoveForward(float AxisValue);
+	void MoveRight(float AxisValue);
 
 	UFUNCTION()
 	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-protected:
-	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
-	UStaticMeshComponent* VisibleMeshComponent;
-
-protected:
-	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
-	USpringArmComponent* CameraSpringArmComponent;
-	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
-	UCameraComponent* CameraComponent;
-
-protected:
-	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
-	UParticleSystemComponent* ParticleSystemComponent;
-
-protected:
-	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly)
-	class USnakePawnMovementComponent* SnakePawnMovementComponent;
-
-	void MoveForward(float AxisValue);
-	void MoveRight(float AxisValue);
-
-protected:
-	void RebornOnRandomLocationAndRotation();
+	void RebornOnRandomLocationAndDirection();
 };

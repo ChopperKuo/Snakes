@@ -26,29 +26,33 @@ public:
 	virtual void BeginPlay() override;
 
 protected:
-	UPROPERTY(Category = Snake, VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_Location)
+	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, Transient, ReplicatedUsing = OnRep_Location)
 	FVector Location;
-	UPROPERTY(Category = Snake, EditAnywhere, BlueprintReadWrite)
-	float NormalSpeed;
+	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, Transient, ReplicatedUsing = OnRep_Location)
+	FRotator Rotation;
+	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, Transient, Replicated)
+	float TurnFactor;
+	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, Transient, Replicated)
+	float RushFactor;
+	UPROPERTY(Category = Gameplay, EditAnywhere, BlueprintReadWrite, Transient, Replicated)
+	float Speed;
 
 	UFUNCTION()
 	void OnRep_Location();
 
-	int32 TickMessageCount = 10;
-	int32 CurrentTickMessage = 0;
-
 protected:
 	bool HasValidData() const;
 
-	void ReplicateMoveToServer(float DeltaTime, FVector InputVector);
+	void ServerMove(float DeltaTime);
 
-	void PerformMovement(float DeltaTime);
+	void ClientMove(float DeltaTime);
 
-	UFUNCTION(Category = Snake, Server, Unreliable, WithValidation)
-	void ReplicateInputVector(float DeltaTime, FVector_NetQuantize100 InputVector);
-	void ReplicateInputVector_Implementation(float DeltaTime, FVector_NetQuantize100 InputVector);
-	bool ReplicateInputVector_Validate(float DeltaTime, FVector_NetQuantize100 InputVector);
+	UFUNCTION(Category = Gameplay, Server, Unreliable, WithValidation)
+	void ReplicateInputVector(FVector_NetQuantize100 InputVector);
+	void ReplicateInputVector_Implementation(FVector_NetQuantize100 InputVector);
+	bool ReplicateInputVector_Validate(FVector_NetQuantize100 InputVector);
 
 public:
-	void SetMovementDirection(const FVector& NewDirection);
+	void SetDirection(const FVector& NewDirection, bool bConstrainToOriginalDirectioin = false);
+	FORCEINLINE FVector GetDirection() const;
 };
