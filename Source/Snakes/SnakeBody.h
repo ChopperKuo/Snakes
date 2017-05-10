@@ -41,6 +41,14 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 public:
+	UFUNCTION(Category = Gameplay, BlueprintNativeEvent)
+	void Die();
+	virtual void Die_Implementation();
+
+	UFUNCTION(Category = Gameplay, BlueprintNativeEvent)
+	void Reborn();
+	virtual void Reborn_Implementation();
+
 	void SetFollowTarget(AActor* Target);
 	FORCEINLINE AActor* GetFollowTarget() const;
 

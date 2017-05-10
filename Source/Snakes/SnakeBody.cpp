@@ -54,7 +54,7 @@ void ASnakeBody::Tick(float DeltaTime)
 	Follow(DeltaTime);
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-	//if (bDrawDebugFollowPath)
+	if (bDrawDebugFollowPath)
 	{
 		for (auto* Node = FollowPath.GetHead(); Node != nullptr; Node = Node->GetNextNode())
 		{
@@ -69,6 +69,21 @@ void ASnakeBody::Tick(float DeltaTime)
 		}
 	}
 #endif
+}
+
+void ASnakeBody::Die_Implementation()
+{
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	SetActorTickEnabled(false);
+	FollowPath.Empty();
+}
+
+void ASnakeBody::Reborn_Implementation()
+{
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorTickEnabled(true);
 }
 
 void ASnakeBody::SetFollowTarget(AActor* Target)

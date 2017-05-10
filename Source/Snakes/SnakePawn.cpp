@@ -59,6 +59,9 @@ ASnakePawn::ASnakePawn()
 	// 初始化USnakePawnMovementComponent。
 	SnakePawnMovementComponent = CreateDefaultSubobject<USnakePawnMovementComponent>(TEXT("SnakePawnMovementComponent"));
 	SnakePawnMovementComponent->UpdatedComponent = RootComponent;
+
+	SnakeBodyClass = ASnakeBody::StaticClass();
+	InitialBodyCount = 2;
 }
 
 UPawnMovementComponent* ASnakePawn::GetMovementComponent() const
@@ -70,18 +73,30 @@ void ASnakePawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	ASnakeBody* FirstSnakeBody = GetWorld()->SpawnActor<ASnakeBody>(GetActorLocation(), GetActorRotation());
-	//FirstSnakeBody->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-	FirstSnakeBody->SetFollowTarget(this);
-
-	ASnakeBody* SecondSnakeBody = GetWorld()->SpawnActor<ASnakeBody>(GetActorLocation(), GetActorRotation());
-	//SecondSnakeBody->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-	SecondSnakeBody->SetFollowTarget(FirstSnakeBody);
-
 	if (HasAuthority())
 	{
 		// Server Logic，初始隨機位置和移動方向。
 		RebornOnRandomLocationAndDirection();
+	}
+
+	if (SnakeBodyClass)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+
+		AActor* FollowTarget = this;
+
+		for (int Index = 0; Index < InitialBodyCount; ++Index)
+		{
+			ASnakeBody* SnakeBody = GetWorld()->SpawnActor<ASnakeBody>(SnakeBodyClass, GetActorLocation(), GetActorRotation(), SpawnParams);
+			if (SnakeBody)
+			{
+				SnakeBody->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+				SnakeBody->SetFollowTarget(FollowTarget);
+
+				FollowTarget = SnakeBody;
+			}
+		}
 	}
 }
 

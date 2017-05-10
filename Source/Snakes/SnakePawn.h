@@ -40,6 +40,13 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
+	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class ASnakeBody> SnakeBodyClass;
+
+	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	int32 InitialBodyCount;
+
+private:
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
 
