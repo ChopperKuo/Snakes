@@ -5,13 +5,15 @@
 #include "GameFramework/Actor.h"
 #include "SnakeBody.generated.h"
 
+#define ERROR_TOLERANCE (0.1f)
+
 struct FSnakeMove
 {
 	FVector Location;
 
 	FRotator Rotation;
 
-	float DeltaTime;
+	float DistanceToNextMove;
 };
 
 UCLASS()
@@ -29,6 +31,9 @@ private:
 	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	UStaticMeshComponent* BodyMesh;
 
+	UPROPERTY(Category = Gameplay, EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	bool bDrawDebugFollowPath;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -40,10 +45,13 @@ public:
 	FORCEINLINE AActor* GetFollowTarget() const;
 
 private:
-	void CaptureTargetMove(float DeltaTime);
-	FSnakeMove CreateMove();
-	bool TryCombineTwoMoves(const FSnakeMove& BaseMove, const FSnakeMove& IncomingMove, FSnakeMove& NewMove);
+	bool HasValidData() const;
 
+	bool CaptureTargetMove(FSnakeMove& OutNewMove);
+	void AddMoveToHead(FSnakeMove& NewMove);
+	bool CanCombineMoves(const FSnakeMove& BaseMove, const FSnakeMove& NewMove);
+
+	void Follow(float DeltaTime);
 
 private:
 	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -52,5 +60,5 @@ private:
 	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	float FollowDistance;
 
-	TArray<FSnakeMove> FollowPath;
+	TDoubleLinkedList<FSnakeMove> FollowPath;
 };

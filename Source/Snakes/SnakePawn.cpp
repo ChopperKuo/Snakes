@@ -70,9 +70,13 @@ void ASnakePawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	ASnakeBody* SnakeBody = GetWorld()->SpawnActor<ASnakeBody>(GetActorLocation(), GetActorRotation());
-	SnakeBody->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-	SnakeBody->SetFollowTarget(this);
+	ASnakeBody* FirstSnakeBody = GetWorld()->SpawnActor<ASnakeBody>(GetActorLocation(), GetActorRotation());
+	//FirstSnakeBody->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+	FirstSnakeBody->SetFollowTarget(this);
+
+	ASnakeBody* SecondSnakeBody = GetWorld()->SpawnActor<ASnakeBody>(GetActorLocation(), GetActorRotation());
+	//SecondSnakeBody->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+	SecondSnakeBody->SetFollowTarget(FirstSnakeBody);
 
 	if (HasAuthority())
 	{
@@ -136,8 +140,10 @@ void ASnakePawn::RebornOnRandomLocationAndDirection()
 
 	// 把Actor搬到隨機位置和隨機方向。
 	FBox WorldBox = SnakeGameMode->GetWorldBox();
-	FVector NewLocation = FMath::RandPointInBox(WorldBox);
-	FRotator NewRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f);
+	//FVector NewLocation = FMath::RandPointInBox(WorldBox);
+	//FRotator NewRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f);
+	FVector NewLocation(0.0f, 0.0f, 100.0f);
+	FRotator NewRotator = FRotator::ZeroRotator;
 	SetActorLocationAndRotation(NewLocation, NewRotator);
 
 	//if (SnakePawnMovementComponent)

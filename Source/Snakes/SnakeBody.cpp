@@ -5,13 +5,14 @@
 
 ASnakeBody::ASnakeBody()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = false;
 
 	// 初始化UBoxComponent。
 	CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionComponent"));
 	CollisionComponent->InitBoxExtent(FVector(50.0f));
-	CollisionComponent->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+	CollisionComponent->SetCollisionProfileName(TEXT("NoCollision"));
 
 	// 指定RootComponent為UBoxComponent。
 	RootComponent = CollisionComponent;
@@ -26,6 +27,8 @@ ASnakeBody::ASnakeBody()
 	{
 		BodyMesh->SetStaticMesh(DefaultMeshAsset.Object);
 	}
+
+	FollowDistance = 150.0f;
 }
 
 void ASnakeBody::BeginPlay()
@@ -37,7 +40,35 @@ void ASnakeBody::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	CaptureTargetMove(DeltaTime);
+	if (!HasValidData())
+	{
+		return;
+	}
+
+	FSnakeMove NewMove;
+	if (CaptureTargetMove(NewMove))
+	{
+		AddMoveToHead(NewMove);
+	}
+
+	Follow(DeltaTime);
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+	//if (bDrawDebugFollowPath)
+	{
+		for (auto* Node = FollowPath.GetHead(); Node != nullptr; Node = Node->GetNextNode())
+		{
+			const FSnakeMove SnakeMove = Node->GetValue();
+			DrawDebugSphere(GetWorld(), SnakeMove.Location, 5.0f, 8, FColor::Yellow);
+			if (Node->GetNextNode())
+			{
+				const FSnakeMove NextSnakeMove = Node->GetNextNode()->GetValue();
+				FColor DrawColor = FVector::Dist(SnakeMove.Location, NextSnakeMove.Location) == SnakeMove.DistanceToNextMove ? FColor::Green : FColor::Red;
+				DrawDebugLine(GetWorld(), SnakeMove.Location, NextSnakeMove.Location, DrawColor);
+			}
+		}
+	}
+#endif
 }
 
 void ASnakeBody::SetFollowTarget(AActor* Target)
@@ -50,53 +81,102 @@ FORCEINLINE AActor* ASnakeBody::GetFollowTarget() const
 	return FollowTarget;
 }
 
-void ASnakeBody::CaptureTargetMove(float DeltaTime)
+bool ASnakeBody::HasValidData() const
 {
-	if (!FollowTarget)
+	return FollowTarget && FollowTarget != this;
+}
+
+bool ASnakeBody::CaptureTargetMove(FSnakeMove& OutNewMove)
+{
+	if (!HasValidData())
 	{
-		return;
+		return false;
 	}
 
-	// 取得目標的位置和旋轉量。
-	FSnakeMove NewMove = CreateMove();
-	NewMove.DeltaTime = DeltaTime;
+	OutNewMove.Location = FollowTarget->GetActorLocation();
+	OutNewMove.Rotation = FollowTarget->GetActorRotation();
+	OutNewMove.DistanceToNextMove = 0.0f;
+	return true;
+}
 
-	// 嘗試把新的移動合併到最後一筆紀錄；否則新增新的移動。
+void ASnakeBody::AddMoveToHead(FSnakeMove& NewMove)
+{
+	auto* HeadNode = FollowPath.GetHead();
+	FSnakeMove& HeadMove = HeadNode->GetValue();
+
 	if (FollowPath.Num() != 0)
 	{
-		FSnakeMove LastMove = FollowPath.Last();
-		if (TryCombineTwoMoves(LastMove, NewMove, NewMove))
+		// 嘗試把新的移動點和Head合併，成功後取代掉舊的Head並重新計算距離。
+		if (HeadNode->GetNextNode())
 		{
-			FollowPath.Last() = NewMove;
-			return;
+			const FSnakeMove& SecondMove = HeadNode->GetNextNode()->GetValue();
+
+			if (CanCombineMoves(HeadMove, SecondMove))
+			{
+				HeadMove = NewMove;
+				HeadMove.DistanceToNextMove = FVector::Dist(HeadMove.Location, SecondMove.Location);
+				return;
+			}
 		}
+
+		// 計算新的移動點到下一個移動點的距離(原本的Head)。
+		NewMove.DistanceToNextMove = FVector::Dist(HeadMove.Location, NewMove.Location);
 	}
 
-	FollowPath.Add(NewMove);
+	// 新的移動點永遠為Head，為了讓Head等於追蹤目標的位置。
+	FollowPath.AddHead(NewMove);
 }
 
-FSnakeMove ASnakeBody::CreateMove()
+bool ASnakeBody::CanCombineMoves(const FSnakeMove& BaseMove, const FSnakeMove& NewMove)
 {
-	FSnakeMove NewMove;
-	if (FollowTarget)
+	if (BaseMove.Rotation.Equals(NewMove.Rotation, ERROR_TOLERANCE))
 	{
-		NewMove.Location = FollowTarget->GetActorLocation();
-		NewMove.Rotation = FollowTarget->GetActorRotation();
-	}
-	return NewMove;
-}
-
-bool ASnakeBody::TryCombineTwoMoves(const FSnakeMove& BaseMove, const FSnakeMove& IncomingMove, FSnakeMove& NewMove)
-{
-	if (BaseMove.Rotation.Equals(IncomingMove.Rotation))
-	{
-		float closestDistance = FMath::PointDistToLine(IncomingMove.Location, BaseMove.Rotation.Vector(), BaseMove.Location);
-		if (closestDistance == 0.0f)
+		float closestDistance = FMath::PointDistToLine(NewMove.Location, BaseMove.Rotation.Vector(), BaseMove.Location);
+		if (FMath::IsNearlyZero(closestDistance, ERROR_TOLERANCE))
 		{
-			NewMove = BaseMove;
-			NewMove.DeltaTime += IncomingMove.DeltaTime;
 			return true;
 		}
 	}
 	return false;
+}
+
+void ASnakeBody::Follow(float DeltaTime)
+{
+	if (FollowPath.Num() == 0)
+	{
+		return;
+	}
+
+	auto* ClosestFollowNode = FollowPath.GetHead();
+	float PathDistance = 0.0f;
+
+	for (; ClosestFollowNode != FollowPath.GetTail(); ClosestFollowNode = ClosestFollowNode->GetNextNode())
+	{
+		const FSnakeMove& SnakeMove = ClosestFollowNode->GetValue();
+		PathDistance += SnakeMove.DistanceToNextMove;
+
+		if (PathDistance >= FollowDistance)
+		{
+			break;
+		}
+	}
+
+	if (ClosestFollowNode == FollowPath.GetTail())
+	{
+		const FSnakeMove& SnakeMove = ClosestFollowNode->GetValue();
+		SetActorLocationAndRotation(SnakeMove.Location, SnakeMove.Rotation);
+	}
+	else
+	{
+		const FSnakeMove& SnakeMove = ClosestFollowNode->GetValue();
+		const FSnakeMove& NextSnakeMove = ClosestFollowNode->GetNextNode()->GetValue();
+		float Factor = (PathDistance - FollowDistance) / SnakeMove.DistanceToNextMove;
+		FVector NewLocation = FMath::Lerp(NextSnakeMove.Location, SnakeMove.Location, Factor);
+		SetActorLocationAndRotation(NewLocation, NextSnakeMove.Rotation);
+
+		while (FollowPath.GetTail() != ClosestFollowNode->GetNextNode())
+		{
+			FollowPath.RemoveNode(FollowPath.GetTail());
+		}
+	}
 }
