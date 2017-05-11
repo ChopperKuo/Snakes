@@ -64,7 +64,7 @@ ASnakePawn::ASnakePawn()
 	SnakePawnMovementComponent->UpdatedComponent = RootComponent;
 
 	SnakeBodyClass = ASnakeBody::StaticClass();
-	InitialBodyCount = 2;
+	InitialBodyNum = 2;
 }
 
 UPawnMovementComponent* ASnakePawn::GetMovementComponent() const
@@ -82,25 +82,7 @@ void ASnakePawn::BeginPlay()
 		RebornOnRandomLocationAndDirection();
 	}
 
-	if (SnakeBodyClass)
-	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = this;
-
-		AActor* FollowTarget = this;
-
-		for (int Index = 0; Index < InitialBodyCount; ++Index)
-		{
-			ASnakeBody* SnakeBody = GetWorld()->SpawnActor<ASnakeBody>(SnakeBodyClass, GetActorLocation(), GetActorRotation(), SpawnParams);
-			if (SnakeBody)
-			{
-				SnakeBody->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-				SnakeBody->GetMovementComponent()->SetFollowActor(FollowTarget);
-
-				FollowTarget = SnakeBody;
-			}
-		}
-	}
+	SetBodyNum(InitialBodyNum);
 }
 
 void ASnakePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -110,6 +92,48 @@ void ASnakePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 	// µù¥UWASD±±¨î¨Æ¥ó¡C
 	InputComponent->BindAxis(TEXT("MoveForward"), this, &ASnakePawn::MoveForward);
 	InputComponent->BindAxis(TEXT("MoveRight"), this, &ASnakePawn::MoveRight);
+}
+
+int32 ASnakePawn::GetBodyNum() const
+{
+	return BodyNodes.Num();
+}
+
+void ASnakePawn::SetBodyNum(int32 NewNum)
+{
+	if (NewNum > BodyNodes.Num())
+	{
+		if (SnakeBodyClass)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+
+			AActor* FollowTarget = BodyNodes.Num() == 0 ? this : Cast<AActor>(BodyNodes.Last());
+
+			int32 Count = NewNum - BodyNodes.Num();
+			for (int Index = 0; Index < Count; ++Index)
+			{
+				ASnakeBody* SnakeBody = GetWorld()->SpawnActor<ASnakeBody>(SnakeBodyClass, GetActorLocation(), GetActorRotation(), SpawnParams);
+				if (SnakeBody)
+				{
+					SnakeBody->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+					SnakeBody->GetMovementComponent()->SetFollowActor(FollowTarget);
+
+					BodyNodes.Add(SnakeBody);
+
+					FollowTarget = SnakeBody;
+				}
+			}
+		}
+	}
+	else if (NewNum < BodyNodes.Num())
+	{
+		for (int Index = NewNum; Index < BodyNodes.Num(); ++Index)
+		{
+			BodyNodes[Index]->Destroy();
+		}
+		BodyNodes.RemoveAt(NewNum, BodyNodes.Num() - NewNum);
+	}
 }
 
 void ASnakePawn::MoveForward(float AxisValue)
@@ -164,29 +188,5 @@ void ASnakePawn::RebornOnRandomLocationAndDirection()
 	FRotator NewRotator = FRotator::ZeroRotator;
 	SetActorLocationAndRotation(NewLocation, NewRotator);
 
-	//if (SnakePawnMovementComponent)
-	//{
-	//	FVector NewDirection = FVector::ForwardVector;
-	//
-	//	int32 DirectionIndex = FMath::Rand() % 4;
-	//	switch (DirectionIndex)
-	//	{
-	//	case 0:
-	//		NewDirection = FVector::ForwardVector;
-	//		break;
-	//	case 1:
-	//		NewDirection = FVector::RightVector;
-	//		break;
-	//	case 2:
-	//		NewDirection = -FVector::ForwardVector;
-	//		break;
-	//	case 3:
-	//		NewDirection = -FVector::RightVector;
-	//		break;
-	//	default:
-	//		break;
-	//	}
-	//
-	//	SnakePawnMovementComponent->SetDirection(NewDirection);
-	//}
+	SetBodyNum(InitialBodyNum);
 }

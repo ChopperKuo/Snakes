@@ -39,12 +39,10 @@ protected:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-private:
-	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class ASnakeBody> SnakeBodyClass;
-
-	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	int32 InitialBodyCount;
+public:
+	UFUNCTION(Category = Gameplay, BlueprintCallable)
+	int32 GetBodyNum() const;
+	void SetBodyNum(int32 NewNum);
 
 private:
 	void MoveForward(float AxisValue);
@@ -54,4 +52,13 @@ private:
 	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	void RebornOnRandomLocationAndDirection();
+
+private:
+	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class ASnakeBody> SnakeBodyClass;
+
+	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	int32 InitialBodyNum;
+
+	TArray<ASnakeBody*> BodyNodes;
 };
