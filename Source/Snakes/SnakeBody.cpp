@@ -42,6 +42,7 @@ void ASnakeBody::Die_Implementation()
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 	SetActorTickEnabled(false);
+	MovementComponent->Stop();
 }
 
 void ASnakeBody::Reborn_Implementation()

@@ -36,6 +36,9 @@ public:
 	UFUNCTION(Category = Gameplay, BlueprintCallable)
 	AActor* GetFollowActor() const;
 
+	UFUNCTION(Category = Gameplay, BlueprintCallable)
+	virtual void Stop();
+
 private:
 	bool HasValidData() const;
 

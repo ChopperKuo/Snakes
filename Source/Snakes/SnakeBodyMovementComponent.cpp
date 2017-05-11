@@ -61,6 +61,11 @@ AActor* USnakeBodyMovementComponent::GetFollowActor() const
 	return FollowActor;
 }
 
+void USnakeBodyMovementComponent::Stop()
+{
+	FollowPath.Empty();
+}
+
 bool USnakeBodyMovementComponent::HasValidData() const
 {
 	return GetOwner() && FollowActor;
