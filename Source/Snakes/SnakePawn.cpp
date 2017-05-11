@@ -25,40 +25,6 @@ ASnakePawn::ASnakePawn()
 	// 指定RootComponent為UBoxComponent。
 	RootComponent = CollisionComponent;
 
-	// 初始化UStaticMeshComponent，作為蛇頭。
-	HeadMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisibleMeshComponent"));
-	HeadMesh->SetupAttachment(RootComponent);
-	HeadMesh->SetRelativeLocation(FVector(0.0f, 0.0f, -50.0f));
-	HeadMesh->SetCollisionProfileName(TEXT("NoCollision"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> DefaultMeshAsset(TEXT("StaticMesh'/Game/StarterContent/Shapes/Shape_Cube.Shape_Cube'"));
-	if (DefaultMeshAsset.Succeeded())
-	{
-		HeadMesh->SetStaticMesh(DefaultMeshAsset.Object);
-	}
-
-	// 初始化USpringArmComponent。
-	CameraSpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArmComponent"));
-	CameraSpringArmComponent->SetupAttachment(HeadMesh);
-	CameraSpringArmComponent->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 50.0f), FRotator(-80.0f, 0.0f, 0.0f));
-	CameraSpringArmComponent->TargetArmLength = 1200.0f;
-	CameraSpringArmComponent->bDoCollisionTest = false;
-	CameraSpringArmComponent->bEnableCameraLag = true;
-	CameraSpringArmComponent->CameraLagSpeed = 3.0f;
-
-	// 初始化UCameraComponent。
-	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
-	CameraComponent->SetupAttachment(CameraSpringArmComponent, USpringArmComponent::SocketName);
-
-	// 初始化UParticleSystemComponent，碰撞時產生特效。
-	ParticleSystemComponent = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ParticleSystemComponent"));
-	ParticleSystemComponent->SetupAttachment(RootComponent);
-	ParticleSystemComponent->bAutoActivate = false;
-	static ConstructorHelpers::FObjectFinder<UParticleSystem> ParticleAsset(TEXT("ParticleSystem'/Game/StarterContent/Particles/P_Explosion.P_Explosion'"));
-	if (ParticleAsset.Succeeded())
-	{
-		ParticleSystemComponent->SetTemplate(ParticleAsset.Object);
-	}
-
 	// 初始化USnakePawnMovementComponent。
 	SnakePawnMovementComponent = CreateDefaultSubobject<USnakePawnMovementComponent>(TEXT("SnakePawnMovementComponent"));
 	SnakePawnMovementComponent->UpdatedComponent = RootComponent;
@@ -175,15 +141,6 @@ void ASnakePawn::OnRep_BodyNum()
 
 void ASnakePawn::OnRep_bIsDead()
 {
-	// Client Logic，播放碰撞特效。
-	if (!HasAuthority())
-	{
-		if (ParticleSystemComponent && ParticleSystemComponent->Template)
-		{
-			ParticleSystemComponent->ToggleActive();
-		}
-	}
-
 	SnakePawnMovementComponent->SetComponentTickEnabled(!bIsDead);
 
 	if (bIsDead)

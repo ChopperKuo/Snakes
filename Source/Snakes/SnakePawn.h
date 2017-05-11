@@ -18,17 +18,6 @@ private:
 	UBoxComponent* CollisionComponent;
 
 	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	UStaticMeshComponent* HeadMesh;
-
-	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	USpringArmComponent* CameraSpringArmComponent;
-	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	UCameraComponent* CameraComponent;
-
-	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	UParticleSystemComponent* ParticleSystemComponent;
-
-	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class USnakePawnMovementComponent* SnakePawnMovementComponent;
 
 public:
