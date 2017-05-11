@@ -66,9 +66,13 @@ protected:
 	/** Replication Notification Callbacks */
 	UFUNCTION()
 	virtual void OnRep_BodyNum();
+	UFUNCTION(Category = Gameplay, BlueprintImplementableEvent, BlueprintCosmetic, meta = (DisplayName = "OnRep_BodyNum"))
+	void ReceiveBodyNum();
 
 	UFUNCTION()
 	virtual void OnRep_bIsDead();
+	UFUNCTION(Category = Gameplay, BlueprintImplementableEvent, BlueprintCosmetic, meta = (DisplayName = "OnRep_bIsDead"))
+	void ReceivebIsDead();
 
 private:
 	void MoveForward(float AxisValue);
@@ -80,18 +84,18 @@ private:
 	void RebornOnRandomLocationAndDirection();
 
 private:
-	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	int32 InitialBodyNum;
 
-	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, Transient, ReplicatedUsing = OnRep_BodyNum, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Category = Gameplay, VisibleDefaultsOnly, Transient, ReplicatedUsing = OnRep_BodyNum, meta = (AllowPrivateAccess = "true"))
 	int32 BodyNum;
 
-	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ASnakeBody> SnakeBodyClass;
 
 	TArray<ASnakeBody*> BodyNodes;
 
-	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, Transient, ReplicatedUsing = OnRep_bIsDead, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Category = Gameplay, VisibleDefaultsOnly, Transient, ReplicatedUsing = OnRep_bIsDead, meta = (AllowPrivateAccess = "true"))
 	bool bIsDead;
 
 	/** Handle for reborn timer */

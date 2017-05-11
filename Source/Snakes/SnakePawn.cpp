@@ -200,6 +200,8 @@ void ASnakePawn::OnRep_bIsDead()
 			SnakeBody->Reborn();
 		}
 	}
+
+	ReceivebIsDead();
 }
 
 void ASnakePawn::MoveForward(float AxisValue)
