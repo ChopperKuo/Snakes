@@ -26,9 +26,11 @@ public:
 	// Sets default values for this component's properties
 	USnakeBodyMovementComponent();
 
+	//~ Begin UActorComponent Interface
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	//~ End UActorComponent Interface
 
 public:
 	UFUNCTION(Category = Gameplay, BlueprintCallable)

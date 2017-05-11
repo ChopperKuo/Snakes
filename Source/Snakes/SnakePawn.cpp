@@ -67,11 +67,6 @@ ASnakePawn::ASnakePawn()
 	InitialBodyNum = 2;
 }
 
-UPawnMovementComponent* ASnakePawn::GetMovementComponent() const
-{
-	return SnakePawnMovementComponent;
-}
-
 void ASnakePawn::BeginPlay()
 {
 	Super::BeginPlay();
@@ -83,6 +78,11 @@ void ASnakePawn::BeginPlay()
 	}
 
 	SetBodyNum(InitialBodyNum);
+}
+
+UPawnMovementComponent* ASnakePawn::GetMovementComponent() const
+{
+	return SnakePawnMovementComponent;
 }
 
 void ASnakePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

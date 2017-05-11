@@ -31,13 +31,18 @@ private:
 	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class USnakePawnMovementComponent* SnakePawnMovementComponent;
 
+	//~ Begin AActor Interface
+protected:
+	virtual void BeginPlay() override;
+	//~ End AActor Interface
+
+	//~ Begin APawn Interface
 public:
 	virtual UPawnMovementComponent* GetMovementComponent() const override;
 
 protected:
-	virtual void BeginPlay() override;
-
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	//~ End APawn Interface
 
 public:
 	UFUNCTION(Category = Gameplay, BlueprintCallable)
