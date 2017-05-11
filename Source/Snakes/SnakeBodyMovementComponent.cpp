@@ -66,6 +66,12 @@ void USnakeBodyMovementComponent::Stop()
 	FollowPath.Empty();
 }
 
+void USnakeBodyMovementComponent::TeleportToFollowActor()
+{
+	GetOwner()->SetActorLocationAndRotation(FollowActor->GetActorLocation(), FollowActor->GetActorRotation());
+	Stop();
+}
+
 bool USnakeBodyMovementComponent::HasValidData() const
 {
 	return GetOwner() && FollowActor;

@@ -5,9 +5,10 @@
 #include "SnakePawnMovementComponent.h"
 #include "SnakeBody.h"
 #include "SnakeBodyMovementComponent.h"
+#include "SnakePlayerState.h"
 #include "SnakesGameModeBase.h"
+#include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
-#include "Templates/Casts.h"
 
 ASnakePawn::ASnakePawn()
 {
@@ -63,8 +64,16 @@ ASnakePawn::ASnakePawn()
 	SnakePawnMovementComponent = CreateDefaultSubobject<USnakePawnMovementComponent>(TEXT("SnakePawnMovementComponent"));
 	SnakePawnMovementComponent->UpdatedComponent = RootComponent;
 
-	SnakeBodyClass = ASnakeBody::StaticClass();
 	InitialBodyNum = 2;
+	SnakeBodyClass = ASnakeBody::StaticClass();
+}
+
+void ASnakePawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ASnakePawn, BodyNum);
+	DOREPLIFETIME(ASnakePawn, bIsDead);
 }
 
 void ASnakePawn::BeginPlay()
@@ -73,11 +82,11 @@ void ASnakePawn::BeginPlay()
 
 	if (HasAuthority())
 	{
+		SetBodyNum(InitialBodyNum);
+
 		// Server Logic，初始隨機位置和移動方向。
 		RebornOnRandomLocationAndDirection();
 	}
-
-	SetBodyNum(InitialBodyNum);
 }
 
 UPawnMovementComponent* ASnakePawn::GetMovementComponent() const
@@ -96,12 +105,41 @@ void ASnakePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 
 int32 ASnakePawn::GetBodyNum() const
 {
-	return BodyNodes.Num();
+	return BodyNum;
 }
 
 void ASnakePawn::SetBodyNum(int32 NewNum)
 {
-	if (NewNum > BodyNodes.Num())
+	if (BodyNum != NewNum)
+	{
+		BodyNum = NewNum;
+		if (Role == ROLE_Authority || Role == ROLE_None)
+		{
+			OnRep_BodyNum();
+		}
+	}
+}
+
+bool ASnakePawn::GetIsDead() const
+{
+	return bIsDead;
+}
+
+void ASnakePawn::SetIsDead(bool bNewIsDead)
+{
+	if (bIsDead != bNewIsDead)
+	{
+		bIsDead = bNewIsDead;
+		if (Role == ROLE_Authority || Role == ROLE_None)
+		{
+			OnRep_bIsDead();
+		}
+	}
+}
+
+void ASnakePawn::OnRep_BodyNum()
+{
+	if (BodyNum > BodyNodes.Num())
 	{
 		if (SnakeBodyClass)
 		{
@@ -110,7 +148,7 @@ void ASnakePawn::SetBodyNum(int32 NewNum)
 
 			AActor* FollowTarget = BodyNodes.Num() == 0 ? this : Cast<AActor>(BodyNodes.Last());
 
-			int32 Count = NewNum - BodyNodes.Num();
+			int32 Count = BodyNum - BodyNodes.Num();
 			for (int Index = 0; Index < Count; ++Index)
 			{
 				ASnakeBody* SnakeBody = GetWorld()->SpawnActor<ASnakeBody>(SnakeBodyClass, GetActorLocation(), GetActorRotation(), SpawnParams);
@@ -126,13 +164,42 @@ void ASnakePawn::SetBodyNum(int32 NewNum)
 			}
 		}
 	}
-	else if (NewNum < BodyNodes.Num())
+	else if (BodyNum < BodyNodes.Num())
 	{
-		for (int Index = NewNum; Index < BodyNodes.Num(); ++Index)
+		for (int Index = BodyNum; Index < BodyNodes.Num(); ++Index)
 		{
 			BodyNodes[Index]->Destroy();
 		}
-		BodyNodes.RemoveAt(NewNum, BodyNodes.Num() - NewNum);
+		BodyNodes.RemoveAt(BodyNum, BodyNodes.Num() - BodyNum);
+	}
+}
+
+void ASnakePawn::OnRep_bIsDead()
+{
+	// Client Logic，播放碰撞特效。
+	if (!HasAuthority())
+	{
+		if (ParticleSystemComponent && ParticleSystemComponent->Template)
+		{
+			ParticleSystemComponent->ToggleActive();
+		}
+	}
+
+	SnakePawnMovementComponent->SetComponentTickEnabled(!bIsDead);
+
+	if (bIsDead)
+	{
+		for (auto* SnakeBody : BodyNodes)
+		{
+			SnakeBody->Die();
+		}
+	}
+	else
+	{
+		for (auto* SnakeBody : BodyNodes)
+		{
+			SnakeBody->Reborn();
+		}
 	}
 }
 
@@ -150,19 +217,11 @@ void ASnakePawn::MoveRight(float AxisValue)
 
 void ASnakePawn::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	// Server Logic，在隨機位置和隨機方向重生。
 	if (HasAuthority())
 	{
-		// Server Logic，在隨機位置和隨機方向重生。
-		RebornOnRandomLocationAndDirection();
-	}
-	else
-	{
-		// Client Logic，播放碰撞特效。
-		if (ParticleSystemComponent && ParticleSystemComponent->Template)
-		{
-			ParticleSystemComponent->SetWorldLocation(SweepResult.ImpactPoint);
-			ParticleSystemComponent->ToggleActive();
-		}
+		SetIsDead(true);
+		GetWorld()->GetTimerManager().SetTimer(TimeHandle_DeferredReborn, this, &ASnakePawn::RebornOnRandomLocationAndDirection, 2.0f);
 	}
 }
 
@@ -182,11 +241,9 @@ void ASnakePawn::RebornOnRandomLocationAndDirection()
 
 	// 把Actor搬到隨機位置和隨機方向。
 	FBox WorldBox = SnakeGameMode->GetWorldBox();
-	//FVector NewLocation = FMath::RandPointInBox(WorldBox);
-	//FRotator NewRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f);
-	FVector NewLocation(0.0f, 0.0f, 100.0f);
-	FRotator NewRotator = FRotator::ZeroRotator;
+	FVector NewLocation = FMath::RandPointInBox(WorldBox);
+	FRotator NewRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f);
 	SetActorLocationAndRotation(NewLocation, NewRotator);
 
-	SetBodyNum(InitialBodyNum);
+	SetIsDead(false);
 }

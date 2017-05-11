@@ -31,8 +31,13 @@ private:
 	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class USnakePawnMovementComponent* SnakePawnMovementComponent;
 
-	//~ Begin AActor Interface
+public:
+	//~ Begin UObject Interface
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	//~ End UObject Interface
+
 protected:
+	//~ Begin AActor Interface
 	virtual void BeginPlay() override;
 	//~ End AActor Interface
 
@@ -47,7 +52,23 @@ protected:
 public:
 	UFUNCTION(Category = Gameplay, BlueprintCallable)
 	int32 GetBodyNum() const;
+
+	UFUNCTION(Category = Gameplay, BlueprintCallable)
 	void SetBodyNum(int32 NewNum);
+
+	UFUNCTION(Category = Gameplay, BlueprintCallable)
+	bool GetIsDead() const;
+
+	UFUNCTION(Category = Gameplay, BlueprintCallable)
+	void SetIsDead(bool bNewIsDead);
+
+protected:
+	/** Replication Notification Callbacks */
+	UFUNCTION()
+	virtual void OnRep_BodyNum();
+
+	UFUNCTION()
+	virtual void OnRep_bIsDead();
 
 private:
 	void MoveForward(float AxisValue);
@@ -60,10 +81,19 @@ private:
 
 private:
 	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class ASnakeBody> SnakeBodyClass;
-
-	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	int32 InitialBodyNum;
 
+	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, Transient, ReplicatedUsing = OnRep_BodyNum, meta = (AllowPrivateAccess = "true"))
+	int32 BodyNum;
+
+	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class ASnakeBody> SnakeBodyClass;
+
 	TArray<ASnakeBody*> BodyNodes;
+
+	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, Transient, ReplicatedUsing = OnRep_bIsDead, meta = (AllowPrivateAccess = "true"))
+	bool bIsDead;
+
+	/** Handle for reborn timer */
+	FTimerHandle TimeHandle_DeferredReborn;
 };

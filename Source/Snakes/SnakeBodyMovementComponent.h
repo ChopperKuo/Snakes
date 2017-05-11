@@ -35,11 +35,15 @@ public:
 public:
 	UFUNCTION(Category = Gameplay, BlueprintCallable)
 	void SetFollowActor(AActor* Target);
+
 	UFUNCTION(Category = Gameplay, BlueprintCallable)
 	AActor* GetFollowActor() const;
 
 	UFUNCTION(Category = Gameplay, BlueprintCallable)
 	virtual void Stop();
+
+	UFUNCTION(Category = Gameplay, BlueprintCallable)
+	virtual void TeleportToFollowActor();
 
 private:
 	bool HasValidData() const;

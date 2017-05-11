@@ -50,4 +50,5 @@ void ASnakeBody::Reborn_Implementation()
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);
 	SetActorTickEnabled(true);
+	MovementComponent->TeleportToFollowActor();
 }
