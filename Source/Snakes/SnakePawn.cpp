@@ -4,12 +4,15 @@
 #include "SnakePawn.h"
 #include "SnakePawnMovementComponent.h"
 #include "SnakeBody.h"
+#include "SnakeBodyMovementComponent.h"
 #include "SnakesGameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Templates/Casts.h"
 
 ASnakePawn::ASnakePawn()
 {
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	PrimaryActorTick.bCanEverTick = false;
 	// 關閉自動位置同步，SnakePawnMovementComponent負責Client的移動。
 	bReplicateMovement = false;
 
@@ -92,7 +95,7 @@ void ASnakePawn::BeginPlay()
 			if (SnakeBody)
 			{
 				SnakeBody->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-				SnakeBody->SetFollowTarget(FollowTarget);
+				SnakeBody->GetMovementComponent()->SetFollowActor(FollowTarget);
 
 				FollowTarget = SnakeBody;
 			}
