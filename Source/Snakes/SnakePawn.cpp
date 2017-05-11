@@ -5,7 +5,6 @@
 #include "SnakePawnMovementComponent.h"
 #include "SnakeBody.h"
 #include "SnakeBodyMovementComponent.h"
-#include "SnakePlayerState.h"
 #include "SnakesGameModeBase.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
