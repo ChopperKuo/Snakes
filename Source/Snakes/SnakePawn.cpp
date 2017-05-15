@@ -41,6 +41,8 @@ ASnakePawn::ASnakePawn()
 	SpringArmComponent->bDoCollisionTest = false;
 	SpringArmComponent->bEnableCameraLag = true;
 	SpringArmComponent->CameraLagSpeed = 3.0f;
+	SpringArmComponent->bEnableCameraRotationLag = true;
+	SpringArmComponent->CameraRotationLagSpeed = 3.0f;
 
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	CameraComponent->SetupAttachment(SpringArmComponent);

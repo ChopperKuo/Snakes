@@ -7,7 +7,7 @@
 USnakePawnMovementComponent::USnakePawnMovementComponent()
 {
 	bReplicates = true;
-	Speed = 400.0f;
+	Speed = 800.0f;
 }
 
 void USnakePawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
@@ -72,7 +72,7 @@ void USnakePawnMovementComponent::ServerMove(float DeltaTime)
 	float SpeedFactor = RushFactor + 1.0f;
 
 	Rotation = UpdatedComponent->GetComponentRotation();
-	Rotation.Yaw += TurnFactor * SpeedFactor;
+	Rotation.Yaw += TurnFactor * SpeedFactor * 2;
 	UpdatedComponent->MoveComponent(FVector::ZeroVector, Rotation, true);
 
 	Velocity = UpdatedComponent->GetForwardVector() * Speed * SpeedFactor;

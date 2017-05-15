@@ -20,7 +20,7 @@ public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
 public:
-	FORCEINLINE FBox GetWorldBox() const;
+	FBox GetWorldBox() const;
 
 private:
 	void SpawnCandy();
