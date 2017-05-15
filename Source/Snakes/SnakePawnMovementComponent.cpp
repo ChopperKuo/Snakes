@@ -4,11 +4,10 @@
 #include "SnakePawnMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 
-USnakePawnMovementComponent::USnakePawnMovementComponent(const FObjectInitializer& ObjectInitializer) :
-	Super(ObjectInitializer)
+USnakePawnMovementComponent::USnakePawnMovementComponent()
 {
-	Speed = 400.0f;
 	bReplicates = true;
+	Speed = 400.0f;
 }
 
 void USnakePawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
@@ -92,7 +91,7 @@ void USnakePawnMovementComponent::ClientMove(float DeltaTime)
 	if (Speed > 0.0f)
 	{
 		FVector DeltaMovement = NewLocation - CurrentLocation;
-		float Factor = FMath::Clamp(DeltaMovement.Size() / (Speed * DeltaTime), 0.0f, 1.0f);
+		float Factor = FMath::Clamp((Speed * DeltaTime) / DeltaMovement.Size(), 0.0f, 1.0f);
 		NewLocation = FMath::Lerp(CurrentLocation, NewLocation, Factor);
 	}
 
@@ -101,37 +100,11 @@ void USnakePawnMovementComponent::ClientMove(float DeltaTime)
 
 void USnakePawnMovementComponent::ReplicateInputVector_Implementation(FVector_NetQuantize100 InputVector)
 {
-	TurnFactor = InputVector.Y;
+	TurnFactor = FMath::Clamp(InputVector.Y, -1.0f, 1.0f);
 	RushFactor = FMath::Clamp(InputVector.X, 0.0f, 1.0f);
 }
 
 bool USnakePawnMovementComponent::ReplicateInputVector_Validate(FVector_NetQuantize100 InputVector)
 {
 	return true;
-}
-
-void USnakePawnMovementComponent::SetDirection(const FVector& NewDirection, bool bConstrainToOriginalDirectioin)
-{
-	//if (NewDirection.IsNearlyZero())
-	//{
-	//	return;
-	//}
-	//
-	//if (bConstrainToOriginalDirectioin)
-	//{
-	//	float ScaleProjection = NewDirection | Direction;
-	//	if (ScaleProjection >= 0.0f)
-	//	{
-	//		Direction = NewDirection.GetSafeNormal();
-	//	}
-	//}
-	//else
-	//{
-	//	Direction = NewDirection.GetSafeNormal();
-	//}
-}
-
-FORCEINLINE FVector USnakePawnMovementComponent::GetDirection() const
-{
-	return FVector::ForwardVector;
 }
