@@ -46,6 +46,14 @@ void USnakePawnMovementComponent::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	DOREPLIFETIME(USnakePawnMovementComponent, Speed);
 	DOREPLIFETIME(USnakePawnMovementComponent, Location);
 	DOREPLIFETIME(USnakePawnMovementComponent, Rotation);
+	DOREPLIFETIME(USnakePawnMovementComponent, RushFactor);
+}
+
+void USnakePawnMovementComponent::Teleport_Implementation(FVector NewLocation, FRotator NewRotation)
+{
+	Location = NewLocation;
+	Rotation = NewRotation;
+	UpdatedComponent->SetWorldLocationAndRotation(NewLocation, NewRotation);
 }
 
 bool USnakePawnMovementComponent::HasValidData() const
@@ -61,13 +69,13 @@ void USnakePawnMovementComponent::ServerMove(float DeltaTime)
 		return;
 	}
 
-	float Factor = RushFactor + 1.0f;
+	float SpeedFactor = RushFactor + 1.0f;
 
 	Rotation = UpdatedComponent->GetComponentRotation();
-	Rotation.Yaw += TurnFactor * Factor;
+	Rotation.Yaw += TurnFactor * SpeedFactor;
 	UpdatedComponent->MoveComponent(FVector::ZeroVector, Rotation, true);
 
-	Velocity = UpdatedComponent->GetForwardVector() * Speed * Factor;
+	Velocity = UpdatedComponent->GetForwardVector() * Speed * SpeedFactor;
 	FVector DeltaMovement = Velocity * DeltaTime;
 	UpdatedComponent->MoveComponent(DeltaMovement, UpdatedComponent->GetComponentQuat(), true);
 
@@ -87,15 +95,14 @@ void USnakePawnMovementComponent::ClientMove(float DeltaTime)
 		return;
 	}
 
-	FVector NewLocation = Location;
-	if (Speed > 0.0f)
-	{
-		FVector DeltaMovement = NewLocation - CurrentLocation;
-		float Factor = FMath::Clamp((Speed * DeltaTime) / DeltaMovement.Size(), 0.0f, 1.0f);
-		NewLocation = FMath::Lerp(CurrentLocation, NewLocation, Factor);
-	}
+	FVector DeltaMovement = Location - CurrentLocation;
+	float Factor = FMath::Clamp((Speed * (RushFactor + 1.0f) * DeltaTime) / DeltaMovement.Size(), 0.0f, 1.0f);
+	FVector NewLocation = FMath::LerpStable(CurrentLocation, Location, Factor);
 
 	UpdatedComponent->SetWorldLocationAndRotation(NewLocation, Rotation);
+
+	//DrawDebugSphere(GetWorld(), Location, 5.0f, 8, FColor::Red, true, 10.0f);
+	//DrawDebugSphere(GetWorld(), Location, 2.5f, 8, FColor::Green, true, 10.0f);
 }
 
 void USnakePawnMovementComponent::ReplicateInputVector_Implementation(FVector_NetQuantize100 InputVector)

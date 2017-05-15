@@ -20,7 +20,7 @@ ASnakePawn::ASnakePawn()
 	Tags.AddUnique(SnakeTagName);
 
 	// 初始化UBoxComponent。
-	CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionComponent"));
+	CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("Collision"));
 	CollisionComponent->bGenerateOverlapEvents = true;
 	CollisionComponent->InitBoxExtent(FVector(50.0f));
 	CollisionComponent->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
@@ -29,8 +29,24 @@ ASnakePawn::ASnakePawn()
 	// 指定RootComponent為UBoxComponent。
 	RootComponent = CollisionComponent;
 
+	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
+	StaticMeshComponent->SetupAttachment(RootComponent);
+	StaticMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, -50.0f));
+	StaticMeshComponent->SetCollisionProfileName(TEXT("NoCollision"));
+
+	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
+	SpringArmComponent->SetupAttachment(StaticMeshComponent);
+	SpringArmComponent->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 50.0f), FRotator(-80.0f, 0.0f, 0.0f));
+	SpringArmComponent->TargetArmLength = 1200.0f;
+	SpringArmComponent->bDoCollisionTest = false;
+	SpringArmComponent->bEnableCameraLag = true;
+	SpringArmComponent->CameraLagSpeed = 3.0f;
+
+	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	CameraComponent->SetupAttachment(SpringArmComponent);
+
 	// 初始化USnakePawnMovementComponent。
-	SnakePawnMovementComponent = CreateDefaultSubobject<USnakePawnMovementComponent>(TEXT("SnakePawnMovementComponent"));
+	SnakePawnMovementComponent = CreateDefaultSubobject<USnakePawnMovementComponent>(TEXT("SnakePawnMovement"));
 	SnakePawnMovementComponent->UpdatedComponent = RootComponent;
 
 	InitialBodyNum = 2;
@@ -246,7 +262,7 @@ void ASnakePawn::Reborn()
 	FBox WorldBox = SnakeGameMode->GetWorldBox();
 	FVector NewLocation = FMath::RandPointInBox(WorldBox);
 	FRotator NewRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f);
-	SetActorLocationAndRotation(NewLocation, NewRotator);
+	SnakePawnMovementComponent->Teleport(NewLocation, NewRotator);
 
 	// 分數歸零。
 	if (PlayerState)

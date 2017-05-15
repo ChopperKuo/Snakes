@@ -21,15 +21,10 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-protected:
-	UPROPERTY(Category = Gameplay, EditAnywhere, BlueprintReadOnly, Replicated)
-	float Speed;
-	UPROPERTY(Category = Gameplay, VisibleAnywhere, Transient, Replicated)
-	FVector Location;
-	UPROPERTY(Category = Gameplay, VisibleAnywhere, Transient, Replicated)
-	FRotator Rotation;
-	float TurnFactor;
-	float RushFactor;
+public:
+	UFUNCTION(Category = Gameplay, NetMulticast, Reliable)
+	void Teleport(FVector NewLocation, FRotator NewRotation);
+	void Teleport_Implementation(FVector NewLocation, FRotator NewRotation);
 
 protected:
 	bool HasValidData() const;
@@ -42,4 +37,15 @@ protected:
 	void ReplicateInputVector(FVector_NetQuantize100 InputVector);
 	void ReplicateInputVector_Implementation(FVector_NetQuantize100 InputVector);
 	bool ReplicateInputVector_Validate(FVector_NetQuantize100 InputVector);
+
+protected:
+	UPROPERTY(Category = Gameplay, EditAnywhere, BlueprintReadOnly, Replicated)
+	float Speed;
+	UPROPERTY(Transient, Replicated)
+	FVector Location;
+	UPROPERTY(Transient, Replicated)
+	FRotator Rotation;
+	float TurnFactor;
+	UPROPERTY(Transient, Replicated)
+	float RushFactor;
 };
