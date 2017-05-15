@@ -2,6 +2,12 @@
 
 #include "Snakes.h"
 #include "SnakesGameModeBase.h"
+#include "CandyActor.h"
+
+void ASnakesGameModeBase::BeginPlay()
+{
+	GetWorld()->GetTimerManager().SetTimer(TimeHandle_SpawnCandy, this, &ASnakesGameModeBase::SpawnCandy, SpawnCandyInterval, true);
+}
 
 void ASnakesGameModeBase::PostLogin(APlayerController* NewPlayer)
 {
@@ -25,4 +31,15 @@ void ASnakesGameModeBase::PostLogin(APlayerController* NewPlayer)
 FBox ASnakesGameModeBase::GetWorldBox() const
 {
 	return WorldBox;
+}
+
+void ASnakesGameModeBase::SpawnCandy()
+{
+	if (!GetWorld() || !CandyActorClass)
+	{
+		return;
+	}
+
+	FVector NewLocation = FMath::RandPointInBox(SpawnCandyBox);
+	GetWorld()->SpawnActor<ACandyActor>(CandyActorClass, NewLocation, FRotator::ZeroRotator);
 }

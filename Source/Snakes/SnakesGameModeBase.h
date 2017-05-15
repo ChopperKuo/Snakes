@@ -12,15 +12,31 @@ UCLASS()
 class SNAKES_API ASnakesGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+
+protected:
+	virtual void BeginPlay() override;
+
 public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
 public:
-	UFUNCTION(Category = Gameplay, BlueprintCallable)
 	FORCEINLINE FBox GetWorldBox() const;
 
-protected:
-	UPROPERTY(Category = Gameplay, EditDefaultsOnly, BlueprintReadWrite)
+private:
+	void SpawnCandy();
+
+private:
+	UPROPERTY(Category = Gameplay, EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	FBox WorldBox;
+
+	UPROPERTY(Category = Gameplay, EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class ACandyActor> CandyActorClass;
+
+	UPROPERTY(Category = Gameplay, EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float SpawnCandyInterval;
+
+	UPROPERTY(Category = Gameplay, EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	FBox SpawnCandyBox;
+
+	FTimerHandle TimeHandle_SpawnCandy;
 };

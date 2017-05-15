@@ -18,9 +18,6 @@ private:
 	UBoxComponent* CollisionComponent;
 
 	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	UStaticMeshComponent* BodyMesh;
-
-	UPROPERTY(Category = Gameplay, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	USnakeBodyMovementComponent* MovementComponent;
 
 public:

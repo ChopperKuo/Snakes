@@ -9,15 +9,19 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 
+FName ASnakePawn::SnakeTagName(TEXT("Snake"));
+
 ASnakePawn::ASnakePawn()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	// 關閉自動位置同步，SnakePawnMovementComponent負責Client的移動。
 	bReplicateMovement = false;
+	Tags.AddUnique(SnakeTagName);
 
 	// 初始化UBoxComponent。
 	CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionComponent"));
+	CollisionComponent->bGenerateOverlapEvents = true;
 	CollisionComponent->InitBoxExtent(FVector(50.0f));
 	CollisionComponent->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 	CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &ASnakePawn::OnBeginOverlap);
@@ -47,10 +51,8 @@ void ASnakePawn::BeginPlay()
 
 	if (HasAuthority())
 	{
-		SetBodyNum(InitialBodyNum);
-
 		// Server Logic，初始隨機位置和移動方向。
-		RebornOnRandomLocationAndDirection();
+		Reborn();
 	}
 }
 
@@ -94,7 +96,10 @@ void ASnakePawn::SetIsDead(bool bNewIsDead)
 {
 	if (bIsDead != bNewIsDead)
 	{
+		// 透過Variable Replication同步給Client。
 		bIsDead = bNewIsDead;
+
+		// Server端必須手動呼叫。
 		if (Role == ROLE_Authority || Role == ROLE_None)
 		{
 			OnRep_bIsDead();
@@ -119,7 +124,7 @@ void ASnakePawn::OnRep_BodyNum()
 				ASnakeBody* SnakeBody = GetWorld()->SpawnActor<ASnakeBody>(SnakeBodyClass, GetActorLocation(), GetActorRotation(), SpawnParams);
 				if (SnakeBody)
 				{
-					SnakeBody->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+					//SnakeBody->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 					SnakeBody->GetMovementComponent()->SetFollowActor(FollowTarget);
 
 					BodyNodes.Add(SnakeBody);
@@ -141,7 +146,11 @@ void ASnakePawn::OnRep_BodyNum()
 
 void ASnakePawn::OnRep_bIsDead()
 {
-	SnakePawnMovementComponent->SetComponentTickEnabled(!bIsDead);
+	CollisionComponent->bGenerateOverlapEvents = !bIsDead;
+	if (SnakePawnMovementComponent)
+	{
+		SnakePawnMovementComponent->SetComponentTickEnabled(!bIsDead);
+	}
 
 	if (bIsDead)
 	{
@@ -175,15 +184,51 @@ void ASnakePawn::MoveRight(float AxisValue)
 
 void ASnakePawn::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// Server Logic，在隨機位置和隨機方向重生。
+	// Server Logic
 	if (HasAuthority())
 	{
-		SetIsDead(true);
-		GetWorld()->GetTimerManager().SetTimer(TimeHandle_DeferredReborn, this, &ASnakePawn::RebornOnRandomLocationAndDirection, 2.0f);
+		if (OtherActor->ActorHasTag(SnakeTagName))
+		{
+			// 碰撞到自己身體不會死亡。
+			if (OtherActor->GetOwner() == this)
+			{
+				return;
+			}
+		}
+		else if (OtherActor->ActorHasTag(TEXT("Candy")))
+		{
+			HandleEatCandy();
+			return;
+		}
+
+		HandleDeathAndReborn();
 	}
 }
 
-void ASnakePawn::RebornOnRandomLocationAndDirection()
+void ASnakePawn::HandleEatCandy()
+{
+	if (PlayerState)
+	{
+		PlayerState->Score += 10.0f;
+
+		int32 NewBodyNum = InitialBodyNum + FMath::FloorToInt(PlayerState->Score / 10.0f);
+		SetBodyNum(NewBodyNum);
+
+		FString Message = FString::Printf(TEXT("Score = %f, BodyNum = %d"), PlayerState->Score, NewBodyNum);
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Green, Message, false);
+	}
+}
+
+void ASnakePawn::HandleDeathAndReborn()
+{
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 60.0f, FColor::Green, FString(TEXT("HandleDeathAndReborn")), false);
+	SetIsDead(true);
+
+	// 在隨機位置和隨機方向重生。
+	GetWorld()->GetTimerManager().SetTimer(TimeHandle_DeferredReborn, this, &ASnakePawn::Reborn, 2.0f);
+}
+
+void ASnakePawn::Reborn()
 {
 	AGameModeBase* GameModeBase = UGameplayStatics::GetGameMode(GetWorld());
 	if (!GameModeBase)
@@ -203,5 +248,15 @@ void ASnakePawn::RebornOnRandomLocationAndDirection()
 	FRotator NewRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f);
 	SetActorLocationAndRotation(NewLocation, NewRotator);
 
+	// 分數歸零。
+	if (PlayerState)
+	{
+		PlayerState->Score = 0.0f;
+	}
+
+	// 身體長度初始化。
+	SetBodyNum(InitialBodyNum);
+
+	// 設定為復活狀態。
 	SetIsDead(false);
 }
