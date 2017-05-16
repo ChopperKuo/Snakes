@@ -72,7 +72,7 @@ void USnakePawnMovementComponent::ServerMove(float DeltaTime)
 	float SpeedFactor = RushFactor + 1.0f;
 
 	Rotation = UpdatedComponent->GetComponentRotation();
-	Rotation.Yaw += TurnFactor * SpeedFactor * 2;
+	Rotation.Yaw += TurnFactor * Speed * SpeedFactor * DeltaTime * 0.3f;
 	UpdatedComponent->MoveComponent(FVector::ZeroVector, Rotation, true);
 
 	Velocity = UpdatedComponent->GetForwardVector() * Speed * SpeedFactor;
